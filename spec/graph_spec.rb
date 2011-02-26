@@ -320,4 +320,44 @@ describe "Graphs" do
       end
     end
   end
+  
+  describe "vertex meta" do
+    before :each do
+      @v = Vertex.new
+    end
+    
+    it "should catch non-existing assingments as options" do
+      expect{
+        @v.my_option = 'meta'
+      }.to change {@v.options[:my_option]}.from(nil).to('meta')
+    end
+    
+    it "should catch non-existing methods as options requests" do
+      expect{
+        @v.my_option = 'meta'
+      }.to change {@v.my_option}.from(nil).to('meta')
+    end
+  end
+  
+  describe "depth-first search" do
+    describe "non-oriented graph" do
+      before :each do
+        @graph = Graph.new 7.times.collect{ Vertex.new }, false
+        @graph.add_direct_path(0, 1)
+        @graph.add_direct_path(0, 2)
+        @graph.add_direct_path(1, 4)
+        @graph.add_direct_path(2, 3)
+        @graph.add_direct_path(3, 4)
+        @graph.add_direct_path(3, 5)
+        @graph.add_direct_path(3, 6)
+        @graph.add_direct_path(5, 6)
+      end
+      
+      it "should be 'jungus'" do
+        @graph.dfs
+      end
+      
+    end
+  end
+  
 end

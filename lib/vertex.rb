@@ -4,11 +4,12 @@
 #       
 
 class Vertex
-	attr_accessor :neighbours, :routes, :name
+	attr_accessor :neighbours, :routes, :name, :options
   
   def initialize
     @neighbours = {}
     @routes = {}
+    @options = {}
     @name= nil
   end
   
@@ -40,5 +41,20 @@ class Vertex
   
   def valid? max
     neighbour_count < max
+  end
+  
+  def reset_options
+    @options = {}
+  end
+  
+  def method_missing(m, *args, &block)
+    m = m.to_s
+    if m[m.length - 1] == '='
+      #~ puts "For debug... 'Adding to options' TO DO: remove"
+      @options[m[0...m.length - 1].to_sym]= args.first
+    else
+      #~ puts "For debug... 'Reading from options' TO DO: remove"
+      @options[m[0...m.length].to_sym]
+    end
   end
 end

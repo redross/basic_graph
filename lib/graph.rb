@@ -117,6 +117,33 @@ class Graph
     current_last
   end
   
+  #~ DFS================================================================
+  def dfs
+    @timer = 0
+    prepare_vertices
+    #~ p @vertices[0]
+    @vertices.each_value do |vertex|
+      dfs_visit(vertex) if vertex.color == :white
+      break
+    end
+    
+  end
+  
+  def dfs_visit vertex
+    vertex.color = :grey
+    @timer += 1
+    vertex.visited_at = @timer
+    vertex.neighbours.each_value do |neighbour|
+      if neighbour.color == :white
+        neighbour.parent = vertex.name
+        dfs_visit neighbour
+      end
+    end
+    vertex.color = :black
+    @timer += 1
+    vertex.cleared_out = @timer
+  end
+  
   private
   
   def convert_to_vertices(from, to)
@@ -141,4 +168,10 @@ class Graph
     to.valid?(max) && from.valid?(max) && from != to
   end
   
+  def prepare_vertices
+    @vertices.each_value do |vertex|
+      vertex.color = :white
+      vertex.parent = nil
+    end
+  end
 end
