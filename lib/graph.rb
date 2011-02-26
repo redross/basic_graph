@@ -126,7 +126,6 @@ class Graph
       dfs_visit(vertex) if vertex.color == :white
       break
     end
-    
   end
   
   def dfs_visit vertex
@@ -142,6 +141,11 @@ class Graph
     vertex.color = :black
     @timer += 1
     vertex.cleared_out = @timer
+  end
+  
+  def jungus?
+    dfs
+    @vertices.collect { |key, vertex| vertex.parent.nil? ? true : nil }.compact.size == 1
   end
   
   private
@@ -169,9 +173,14 @@ class Graph
   end
   
   def prepare_vertices
+    reset_vertices
     @vertices.each_value do |vertex|
       vertex.color = :white
       vertex.parent = nil
     end
+  end
+  
+  def reset_vertices
+    @vertices.each_value { |v| v.reset_options }
   end
 end

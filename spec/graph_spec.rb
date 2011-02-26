@@ -354,8 +354,15 @@ describe "Graphs" do
       end
       
       it "should be 'jungus'" do
-        @graph.dfs
+        @graph.jungus?.should be_true
       end
+      
+      it "should not  be 'jungus'" do
+        @graph.delete_direct_path(5, 6)
+        @graph.delete_direct_path(3, 6)
+        @graph.jungus?.should be_false
+      end
+      
       
     end
   end
