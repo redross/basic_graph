@@ -148,6 +148,15 @@ class Graph
     @vertices.collect { |key, vertex| vertex.parent.nil? ? true : nil }.compact.size == 1
   end
   
+  def dfs_path
+    dfs
+    path = []
+    @vertices.each_value do |vertex|
+      path[vertex.visited_at.to_i] = vertex.name if vertex.visited_at
+    end
+    path.compact.join(' -> ') 
+  end
+  
   private
   
   def convert_to_vertices(from, to)

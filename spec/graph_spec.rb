@@ -363,6 +363,9 @@ describe "Graphs" do
         @graph.jungus?.should be_false
       end
       
+      it "should print the path" do
+        @graph.dfs_path.should == "0 -> 1 -> 4 -> 3 -> 2 -> 5 -> 6"
+      end
       
     end
   end
