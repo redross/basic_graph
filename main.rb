@@ -1,4 +1,3 @@
-# encoding: utf-8
 #       main.rb
 #       
 #       Copyright 2011 Gintaras Sakalauskas <gintaras@Barnis>
@@ -19,7 +18,7 @@ require 'graph.rb'
 if @graph.jungus?
   puts "Grafas jungus"
 else
-  puts "Grafas nėra jungus"
+  puts "Grafas nera jungus"
 end
 
 puts "Apeitas kelias:"

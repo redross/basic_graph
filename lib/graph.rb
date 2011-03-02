@@ -9,45 +9,52 @@ class Graph
   attr_accessor :vertices
   attr_reader :oriented
   
-	def initialize(vertices = nil, oriented = true)
-    @vertices = {}
-    oriented ? @oriented = true : @oriented = false 
-    vertices.each{ |v| add_vertex(v) } if vertices
+	def initialize(vertices = 0, oriented = true)
+    @vertices = []
+    oriented ? @oriented = true : @oriented = false
+    @max_index =  vertices
+    @vertices.fill(0...vertices) {|i| Vertex.new(i)}
+    #~ p @vertices 
+    #~ vertices.each{ |v| add_vertex(v) } if vertices
 	end
   
-  def add_vertex(u)
+  def add_vertices(u)
     if u.class.to_s == 'Array'
       u.each { |v| add_vertex(v) }
-    else
-      if u.class.to_s == 'Vertex'
-        u.name = current_last
-        @vertices[current_last] = u 
-      end
     end
+  end
+  
+  def add_vertex(u)
+    if u.class.to_s == 'Vertex'
+      u.name = current_last
+      @vertices[current_last] = u
+      @max_index += 1
+    end 
   end
   
   def path_weight(from, to)
     convert_to_vertices(from, to) do |from, to|
-      from.routes[to.name]
+      from.neighbours[to.name]
     end
   end
   
   def change_weight(from, to, weight)
     convert_to_vertices(from, to) do |from, to|
-      from.routes[to.name] = weight
+      from.neighbours[to.name] = weight
     end
   end
   #~ RANDOM GRAPH=======================================================
 
     
   def self.random(count, min=1, max=1, oriented = true)
-    graph = self.new count.times.collect{ Vertex.new }, oriented ? true : false 
+    #~ graph = self.new count.times.collect{ Vertex.new }, oriented ? true : false 
+    graph = self.new count, oriented ? true : false 
     graph.seed_paths(min, max)
     graph
   end
   
   def seed_paths(min, max)
-    @vertices.each_value do |from_vertex|
+    @vertices.each do |from_vertex|
       paths_to_create = (min..max).to_a.shuffle.first
       random_vertices do |to_vertex|
         break if paths_to_create == 0
@@ -88,12 +95,13 @@ class Graph
   end
   #~ VERTICE NUMBERS====================================================
   def change_vertex_number(from, to)
-    unless @vertices.key? to
+    unless @vertices[to]
       from = vertex(from)
-      @vertices.each_value {|v| v.rename_neighbour(from, to)}
+      @vertices.each {|v| v.rename_neighbour(from, to)}
       @vertices[to] = from
       @vertices.delete from.name
       from.name = to
+      @max_index = to + 1 if @max_index < to
     end
   end
   #~ OUTPUT functions===================================================
@@ -110,11 +118,13 @@ class Graph
   end
   #~ COUNT functions====================================================
   def current_last
-    @vertices.size > 0 ? @vertices.keys.max + 1 : 0
+    @max_index
+    #~ @vertices.size > 0 ? @vertices.keys.max + 1 : 0
   end
   
   def vertice_count
-    current_last
+    #~ current_last
+    @vertices.size
   end
   
   #~ DFS================================================================
@@ -122,7 +132,7 @@ class Graph
     @timer = 0
     prepare_vertices
     #~ p @vertices[0]
-    @vertices.each_value do |vertex|
+    @vertices.each do |vertex|
       dfs_visit(vertex) if vertex.color == :white
       break
     end
@@ -132,10 +142,10 @@ class Graph
     vertex.color = :grey
     @timer += 1
     vertex.visited_at = @timer
-    vertex.neighbours.each_value do |neighbour|
-      if neighbour.color == :white
-        neighbour.parent = vertex.name
-        dfs_visit neighbour
+    vertex.neighbours.each_key do |neighbour|
+      if vertex(neighbour).color == :white
+        vertex(neighbour).parent = vertex.name
+        dfs_visit vertex(neighbour)
       end
     end
     vertex.color = :black
@@ -145,13 +155,13 @@ class Graph
   
   def jungus?
     dfs
-    @vertices.collect { |key, vertex| vertex.parent.nil? ? true : nil }.compact.size == 1
+    @vertices.collect { |vertex| vertex.parent.nil? ? true : nil }.compact.size == 1
   end
   
   def dfs_path
     dfs
     path = []
-    @vertices.each_value do |vertex|
+    @vertices.each do |vertex|
       path[vertex.visited_at.to_i] = vertex.name if vertex.visited_at
     end
     path.compact.join(' -> ') 
@@ -170,11 +180,15 @@ class Graph
   end
   
   def random_vertices
-    @vertices.keys.shuffle.each {|i| yield @vertices[i]}
+    indexes = []
+    @vertices.each_index do |i|
+      indexes << i
+    end
+    indexes.shuffle.each {|i| yield @vertices[i]}
   end
   
   def add_if_missing(v)
-    add_vertex(v) unless @vertices.values.include? v
+    add_vertex(v) unless @vertices.include? v
   end
   
   def valid_for_path?(from, to, max)
@@ -183,13 +197,13 @@ class Graph
   
   def prepare_vertices
     reset_vertices
-    @vertices.each_value do |vertex|
+    @vertices.each do |vertex|
       vertex.color = :white
       vertex.parent = nil
     end
   end
   
   def reset_vertices
-    @vertices.each_value { |v| v.reset_options }
+    @vertices.each { |v| v.reset_options }
   end
 end

@@ -6,11 +6,10 @@
 class Vertex
 	attr_accessor :neighbours, :routes, :name, :options
   
-  def initialize
+  def initialize name = nil
     @neighbours = {}
-    @routes = {}
     @options = {}
-    @name= nil
+    @name= name if name
   end
   
   def neighbour? v
@@ -18,19 +17,19 @@ class Vertex
   end
   
   def add_neighbour v, weight
-    @neighbours[v.name]= v
-    @routes[v.name] = weight
+    @neighbours[v.name]= weight
+    #~ @routes[v.name] = weight
   end
   
   def remove_neighbour v
     @neighbours.delete(v.name)
-    @routes.delete(v.name)
+    #~ @routes.delete(v.name)
   end
   
   def rename_neighbour from, to
     if neighbour? from
-      @neighbours[to]= from
-      @routes[to] = @routes[from.name]
+      @neighbours[to]= @neighbours[from.name]
+      #~ @routes[to] = @routes[from.name]
       remove_neighbour from
     end
   end

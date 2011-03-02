@@ -1,4 +1,24 @@
 require 'graph'
+require 'benchmark'
+
+RSpec::Matchers.define :take_less_than do |n|
+  chain :seconds do; end
+
+  match do |block|
+    @elapsed = Benchmark.realtime do
+      block.call
+    end
+    @elapsed <= n
+  end
+  
+  failure_message_for_should_not do |actual|
+    "expected that task would take more than #{expected} seconds, but it took #{@elapsed} "
+  end
+  
+  failure_message_for_should do |actual|
+    "expected that task would not take more than #{expected} seconds, but it took #{@elapsed} "
+  end
+end
 
 describe "Graphs" do
   describe "Graph" do
@@ -9,7 +29,7 @@ describe "Graphs" do
     
     describe "initialize" do
       it "should default to empty graph if no parameters given" do
-        @graph.vertices.should == {}
+        @graph.vertices.should == []
       end
     end
     
@@ -241,24 +261,41 @@ describe "Graphs" do
           end
           
           it "should not have more neighbours than allowed maximum number" do
-            @r_graph.vertices.each_value do |vertex|
+            @r_graph.vertices.each do |vertex|
               vertex.neighbour_count.should <= 5
             end
           end
           
           it "should not have less neighbours than allowed minimum number" do
-            @r_graph.vertices.each_value do |vertex|
+            @r_graph.vertices.each do |vertex|
               vertex.neighbour_count.should >= 2
             end
           end
         end
+        
+        describe "huge random graph" do
+          it "should not take ages to create a huge random graph" do
+            expect do
+              Graph.random 1000, 2, 4
+            end.to take_less_than(0.5).seconds
+          end
+          
+          it "should not take ages to walk trough a huge random graph" do
+              @g = Graph.random 2000, 2, 4
+              expect do
+                @g.jungus?
+              end.to take_less_than(0.5).seconds
+              #~ pending
+          end
+        end
+        
       end
     end
   end
   
   describe "non-oriented graph" do
     before :each do
-      @graph = Graph.new nil, false
+      @graph = Graph.new 0, false
       @u = Vertex.new
       @v = Vertex.new
       @vertex = Vertex.new
@@ -285,13 +322,13 @@ describe "Graphs" do
         end
         
         it "should not have more neighbours than allowed maximum number" do
-          @r_graph.vertices.each_value do |vertex|
+          @r_graph.vertices.each do |vertex|
             vertex.neighbour_count.should <= 5
           end
         end
         
         it "should not have less neighbours than allowed minimum number" do
-          @r_graph.vertices.each_value do |vertex|
+          @r_graph.vertices.each do |vertex|
             vertex.neighbour_count.should >= 2
           end
         end
@@ -342,7 +379,7 @@ describe "Graphs" do
   describe "depth-first search" do
     describe "non-oriented graph" do
       before :each do
-        @graph = Graph.new 7.times.collect{ Vertex.new }, false
+        @graph = Graph.new 7, false
         @graph.add_direct_path(0, 1)
         @graph.add_direct_path(0, 2)
         @graph.add_direct_path(1, 4)
@@ -368,6 +405,23 @@ describe "Graphs" do
       end
       
     end
+  end
+  
+  describe "refactored" do
+    it "should create vertices properly" do
+      @graph= Graph.new 1000, false
+      @graph.vertices.count.should == 1000
+      @graph_oriented= Graph.new 1000
+      @graph_oriented.vertices.count.should == 1000
+    end
+    
+    it "should create vertices very fast" do
+      expect do
+        Graph.new 1000000, false
+      end.to take_less_than(1).seconds
+    end
+    
+    
   end
   
 end
