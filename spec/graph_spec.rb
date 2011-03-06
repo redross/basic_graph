@@ -31,6 +31,14 @@ describe "Graphs" do
       it "should default to empty graph if no parameters given" do
         @graph.vertices.should == []
       end
+      
+      describe "valid vertices" do
+        it "should be all vertices" do
+          @r_graph = Graph.new 50
+          @r_graph.valid_indexes.size.should == 50
+        end
+      end
+      
     end
     
     describe "adding vertices" do
@@ -60,6 +68,25 @@ describe "Graphs" do
           expect{
             @graph.add_direct_path(@u, @vertex)
           }.to change{ @graph.vertice_count }.from(0).to(2)
+        end
+      end
+      
+      describe "valid indexes" do
+        it "should increase count" do
+          @v = Vertex.new
+          expect{
+            @graph.add_vertex(@v)
+          }.to change {@graph.valid_indexes.size}.by(1)
+        end
+        
+        it "should not include itself index" do
+          @v = Vertex.new
+          @u = Vertex.new
+          @i = Vertex.new
+          @graph.add_vertices [@v, @u, @i]
+          @graph.valid_vertices(2, @u) do |vertex|
+            vertex.should_not == @u
+          end
         end
       end
     end
@@ -250,46 +277,44 @@ describe "Graphs" do
 
     describe "random graph" do
       it "should have a predefined number of vertices" do
-        @r_graph = Graph.random 5
+        @r_graph = Graph.random 5, 1, 2
         @r_graph.vertice_count.should == 5
       end
       
-      describe "random graph" do
-        describe "standart random graph" do
-          before :each do
-            @r_graph = Graph.random 10, 2, 5
-          end
-          
-          it "should not have more neighbours than allowed maximum number" do
-            @r_graph.vertices.each do |vertex|
-              vertex.neighbour_count.should <= 5
-            end
-          end
-          
-          it "should not have less neighbours than allowed minimum number" do
-            @r_graph.vertices.each do |vertex|
-              vertex.neighbour_count.should >= 2
-            end
+      describe "standart random graph" do
+        before :each do
+          @r_graph = Graph.random 10, 2, 5
+        end
+        
+        it "should not have more neighbours than allowed maximum number" do
+          @r_graph.vertices.each do |vertex|
+            vertex.neighbour_count.should <= 5
           end
         end
         
-        describe "huge random graph" do
-          it "should not take ages to create a huge random graph" do
-            expect do
-              Graph.random 1000, 2, 4
-            end.to take_less_than(0.5).seconds
-          end
-          
-          it "should not take ages to walk trough a huge random graph" do
-              @g = Graph.random 2000, 2, 4
-              expect do
-                @g.jungus?
-              end.to take_less_than(0.5).seconds
-              #~ pending
+        it "should not have less neighbours than allowed minimum number" do
+          @r_graph.vertices.each do |vertex|
+            vertex.neighbour_count.should >= 2
           end
         end
-        
       end
+        
+      describe "huge random graph" do
+        it "should not take ages to create a huge random graph" do
+          expect do
+            Graph.random 1000, 2, 4
+          end.to take_less_than(0.5).seconds
+        end
+        
+        it "should not take ages to walk trough a huge random graph" do
+            @g = Graph.random 2000, 2, 4
+            expect do
+              @g.jungus?
+            end.to take_less_than(0.5).seconds
+            #~ pending
+        end
+      end
+      
     end
   end
   
@@ -326,7 +351,7 @@ describe "Graphs" do
             vertex.neighbour_count.should <= 5
           end
         end
-        
+         
         it "should not have less neighbours than allowed minimum number" do
           @r_graph.vertices.each do |vertex|
             vertex.neighbour_count.should >= 2
@@ -420,8 +445,5 @@ describe "Graphs" do
         Graph.new 1000000, false
       end.to take_less_than(1).seconds
     end
-    
-    
   end
-  
 end
