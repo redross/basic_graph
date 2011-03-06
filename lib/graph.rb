@@ -6,16 +6,16 @@ $LOAD_PATH << '.'
 require 'vertex.rb'
 
 class Graph
-  attr_accessor :vertices
+  attr_accessor :vertices, :valid_indexes
   attr_reader :oriented
   
 	def initialize(vertices = 0, oriented = true)
     @vertices = []
+    @valid_indexes = []
     oriented ? @oriented = true : @oriented = false
     @max_index =  vertices
     @vertices.fill(0...vertices) {|i| Vertex.new(i)}
-    #~ p @vertices 
-    #~ vertices.each{ |v| add_vertex(v) } if vertices
+    @valid_indexes.fill(0...vertices) {|i| i}
 	end
   
   def add_vertices(u)
@@ -28,6 +28,7 @@ class Graph
     if u.class.to_s == 'Vertex'
       u.name = current_last
       @vertices[current_last] = u
+      @valid_indexes << u.name
       @max_index += 1
     end 
   end
@@ -53,17 +54,17 @@ class Graph
     graph
   end
   
-  def seed_paths(min, max)
+  def seed_paths(min, max) #2 5
     @vertices.each do |from_vertex|
-      paths_to_create = (min..max).to_a.shuffle.first
-      random_vertices do |to_vertex|
-        break if paths_to_create == 0
-        if valid_for_path?(from_vertex, to_vertex, max)
-          add_direct_path(from_vertex, to_vertex)
-          paths_to_create -= 1
-        else
-          next
-        end
+      fr_neighbours = from_vertex.neighbour_count # 2
+      minimum = (min-fr_neighbours > 0 ? min-fr_neighbours : 0)
+      #~ maximimum = max-fr_neighbours > 0 ? max-fr_neighbours : 0
+      choice = (minimum..max-fr_neighbours).to_a
+      paths_to_create = choice.sample
+      valid_vertices(paths_to_create, from_vertex) do |to_vertex|
+        break if to_vertex.nil?
+        add_direct_path(from_vertex, to_vertex, 1, max)
+        paths_to_create -= 1
       end
     end
   end
@@ -74,12 +75,20 @@ class Graph
     end
   end
   
-  def add_direct_path(from, to, weight = 1)
+  def add_direct_path(from, to, weight = 1, max = nil)
     convert_to_vertices(from, to) do |from, to|
       add_if_missing from
       add_if_missing to
       from.add_neighbour(to, weight)
-      to.add_neighbour(from, weight) unless @oriented
+      unless @oriented 
+        to.add_neighbour(from, weight) unless @oriented
+        if max
+          unless to.valid?(max)
+            @valid_indexes.delete(to.name)
+          end
+        end
+      end
+      (@valid_indexes.delete(from.name) unless from.valid?(max)) if max
     end
   end
   
@@ -131,7 +140,6 @@ class Graph
   def dfs
     @timer = 0
     prepare_vertices
-    #~ p @vertices[0]
     @vertices.each do |vertex|
       dfs_visit(vertex) if vertex.color == :white
       break
@@ -167,6 +175,15 @@ class Graph
     path.compact.join(' -> ') 
   end
   
+  def valid_vertices(n, from)
+    #~ indexes = []
+    #~ @vertices.each_index do |i|
+      #~ indexes << i
+    #~ end
+    yield nil if n.nil? || n == 0
+    (@valid_indexes - [from.name]).sample(n).each {|i| yield @vertices[i]}
+  end
+  
   private
   
   def convert_to_vertices(from, to)
@@ -187,12 +204,10 @@ class Graph
     indexes.shuffle.each {|i| yield @vertices[i]}
   end
   
+
+  
   def add_if_missing(v)
     add_vertex(v) unless @vertices.include? v
-  end
-  
-  def valid_for_path?(from, to, max)
-    to.valid?(max) && from.valid?(max) && from != to
   end
   
   def prepare_vertices
