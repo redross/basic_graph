@@ -302,8 +302,8 @@ describe "Graphs" do
       describe "huge random graph" do
         it "should not take ages to create a huge random graph" do
           expect do
-            Graph.random 1000, 2, 4
-          end.to take_less_than(0.5).seconds
+            Graph.random 2000, 2, 4
+          end.to take_less_than(1.2).seconds
         end
         
         it "should not take ages to walk trough a huge random graph" do
@@ -432,6 +432,34 @@ describe "Graphs" do
     end
   end
   
+  describe "Dijkstra" do
+    it "should find shortest path between 2 vertices" do
+      @graph = Graph.random 2, 1, 1, false
+      @graph.dijkstra @graph.vertices.first
+      @graph.vertices.first.distance.should == 0
+      @graph.vertices[1].distance.should == 1
+    end
+    
+    it "should find shortest path between N vertices" do
+      @graph = Graph.new 6, false
+      @graph.add_direct_path(0, 1, 5)
+      @graph.add_direct_path(0, 2, 10)
+      @graph.add_direct_path(1, 3, 2)
+      @graph.add_direct_path(2, 3, 25)
+      @graph.add_direct_path(2, 5, 4)
+      @graph.add_direct_path(3, 4, 10)
+      @graph.add_direct_path(4, 5, 1)
+      @graph.dijkstra @graph.vertices[0]
+      @graph.vertices.first.distance.should == 0
+      @graph.vertices[1].distance.should == 5
+      @graph.vertices[2].distance.should == 10
+      @graph.vertices[3].distance.should == 7
+      @graph.vertices[4].distance.should == 15
+      @graph.vertices[5].distance.should == 14
+    end
+    
+  end
+  
   describe "refactored" do
     it "should create vertices properly" do
       @graph= Graph.new 1000, false
@@ -446,4 +474,14 @@ describe "Graphs" do
       end.to take_less_than(1).seconds
     end
   end
+  it "test" do
+  @vv = []
+  @vv.fill(0...50000) {|i| i}
+  @c= []
+         expect do
+            1000000.times { @c << @vv.sample(1)}
+          end.to take_less_than(2).seconds
+    #~ p @c.uniq.count
+  end
+  
 end

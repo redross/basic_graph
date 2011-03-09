@@ -5,7 +5,7 @@
 $LOAD_PATH << './lib'
 require 'graph.rb'
      
-@graph = Graph.new 7.times.collect{ Vertex.new }, false
+@graph = Graph.new 7, false
 @graph.add_direct_path(0, 1)
 @graph.add_direct_path(0, 2)
 @graph.add_direct_path(1, 4)

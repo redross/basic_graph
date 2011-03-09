@@ -4,7 +4,7 @@
 #       
 $LOAD_PATH << '.'
 require 'vertex.rb'
-
+Infinity = 999999999999999999999999999999999999999999999999999
 class Graph
   attr_accessor :vertices, :valid_indexes
   attr_reader :oriented
@@ -136,6 +136,71 @@ class Graph
     @vertices.size
   end
   
+  #~ DIJSKTRA===========================================================
+  #~ PESUDOCODE from Wikipedia
+ #~ 1  function Dijkstra(Graph, source):
+ #~ 2      for each vertex v in Graph:           // Initializations
+ #~ 3          dist[v] := infinity ;              // Unknown distance function from source to v
+ #~ 4          previous[v] := undefined ;         // Previous node in optimal path from source
+ #~ 5      end for ;
+ #~ 6      dist[source] := 0 ;                    // Distance from source to source
+ #~ 7      Q := the set of all nodes in Graph ;
+        #~ // All nodes in the graph are unoptimized - thus are in Q
+ #~ 8      while Q is not empty:                 // The main loop
+ #~ 9          u := vertex in Q with smallest dist[] ;
+#~ 10          if dist[u] = infinity:
+#~ 11              break ;                        // all remaining vertices are inaccessible from source
+#~ 12          fi ;
+#~ 13          remove u from Q ;
+#~ 14          for each neighbor v of u:         // where v has not yet been removed from Q.
+#~ 15              alt := dist[u] + dist_between(u, v) ;
+#~ 16              if alt < dist[v]:             // Relax (u,v,a)
+#~ 17                  dist[v] := alt ;
+#~ 18                  previous[v] := u ;
+#~ 19              fi  ;
+#~ 20          end for ;
+#~ 21      end while ;
+#~ 22      return dist[] ;
+#~ 23  end Dijkstra.
+  def dijkstra start
+    prepare_for_dijkstra
+    @cc= Vertex.new
+    @cc.distance = Infinity
+    start.distance= 0
+    q= @vertices.size
+    while q > 0
+      smallest_distance(@vertices) do |u|
+        return if u.distance == Infinity
+        q -= 1
+        u.deleted = true
+        u.neighbours.each_key do |v|
+          v= vertex(v)
+          alt= u.distance + u.neighbours[v.name]
+          if alt < v.distance
+            v.distance = alt
+            v.previous = u.name
+          end
+        end
+      end
+    end
+  end
+  
+  def smallest_distance(vertices)
+    min= @cc
+    vertices.each do |vertex|
+      min= vertex if (vertex.distance < min.distance) && (vertex.deleted == false)
+    end
+    yield min
+  end
+  
+  def prepare_for_dijkstra
+    @vertices.each do |vertex|
+      vertex.distance= 99999999999999999999999999999
+      vertex.previous= :undefined
+      vertex.deleted= false
+    end
+  end
+  #~ 
   #~ DFS================================================================
   def dfs
     @timer = 0
