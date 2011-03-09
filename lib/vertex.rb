@@ -8,7 +8,7 @@ class Vertex
   
   def initialize name = nil
     @neighbours = {}
-    @options = {}
+    @options = {} #a
     @name= name if name
   end
   
