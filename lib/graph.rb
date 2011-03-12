@@ -6,16 +6,14 @@ $LOAD_PATH << '.'
 require 'vertex.rb'
 Infinity = 999999999999999999999999999999999999999999999999999
 class Graph
-  attr_accessor :vertices, :valid_indexes
+  attr_accessor :vertices
   attr_reader :oriented
   
 	def initialize(vertices = 0, oriented = true)
     @vertices = []
-    @valid_indexes = []
     oriented ? @oriented = true : @oriented = false
     @max_index =  vertices
     @vertices.fill(0...vertices) {|i| Vertex.new(i)}
-    @valid_indexes.fill(0...vertices) {|i| i}
 	end
   
   def add_vertices(u)
@@ -28,7 +26,6 @@ class Graph
     if u.class.to_s == 'Vertex'
       u.name = current_last
       @vertices[current_last] = u
-      @valid_indexes << u.name
       @max_index += 1
     end 
   end
@@ -48,23 +45,23 @@ class Graph
 
     
   def self.random(count, min=1, max=1, oriented = true)
-    #~ graph = self.new count.times.collect{ Vertex.new }, oriented ? true : false 
     graph = self.new count, oriented ? true : false 
     graph.seed_paths(min, max)
     graph
   end
   
-  def seed_paths(min, max) #2 5
+  def seed_paths(min, max)
     @vertices.each do |from_vertex|
-      fr_neighbours = from_vertex.neighbour_count # 2
+      fr_neighbours = from_vertex.neighbour_count
       minimum = (min-fr_neighbours > 0 ? min-fr_neighbours : 0)
-      #~ maximimum = max-fr_neighbours > 0 ? max-fr_neighbours : 0
       choice = (minimum..max-fr_neighbours).to_a
       paths_to_create = choice.sample
-      valid_vertices(paths_to_create, from_vertex) do |to_vertex|
-        break if to_vertex.nil?
-        add_direct_path(from_vertex, to_vertex, 1, max)
-        paths_to_create -= 1
+      while (paths_to_create > 0)
+        to_vertex= @vertices.sample
+        if to_vertex.valid?(max) && (to_vertex != from_vertex) && !(from_vertex.neighbour? to_vertex)
+          add_direct_path(from_vertex, to_vertex) 
+          paths_to_create -= 1
+        end
       end
     end
   end
@@ -75,20 +72,12 @@ class Graph
     end
   end
   
-  def add_direct_path(from, to, weight = 1, max = nil)
+  def add_direct_path(from, to, weight = 1)
     convert_to_vertices(from, to) do |from, to|
       add_if_missing from
       add_if_missing to
       from.add_neighbour(to, weight)
-      unless @oriented 
-        to.add_neighbour(from, weight) unless @oriented
-        if max
-          unless to.valid?(max)
-            @valid_indexes.delete(to.name)
-          end
-        end
-      end
-      (@valid_indexes.delete(from.name) unless from.valid?(max)) if max
+      to.add_neighbour(from, weight) unless @oriented
     end
   end
   
@@ -167,7 +156,7 @@ class Graph
     @cc= Vertex.new
     @cc.distance = Infinity
     start.distance= 0
-    q= @vertices.size
+    q= @vertices.size - 1
     while q > 0
       smallest_distance(@vertices) do |u|
         return if u.distance == Infinity
@@ -195,7 +184,7 @@ class Graph
   
   def prepare_for_dijkstra
     @vertices.each do |vertex|
-      vertex.distance= 99999999999999999999999999999
+      vertex.distance= Infinity
       vertex.previous= :undefined
       vertex.deleted= false
     end
@@ -240,15 +229,6 @@ class Graph
     path.compact.join(' -> ') 
   end
   
-  def valid_vertices(n, from)
-    #~ indexes = []
-    #~ @vertices.each_index do |i|
-      #~ indexes << i
-    #~ end
-    yield nil if n.nil? || n == 0
-    (@valid_indexes - [from.name]).sample(n).each {|i| yield @vertices[i]}
-  end
-  
   private
   
   def convert_to_vertices(from, to)
@@ -260,17 +240,7 @@ class Graph
   def vertex(nr)
     return nr.instance_of?(Fixnum) ? @vertices[nr] : nr
   end
-  
-  def random_vertices
-    indexes = []
-    @vertices.each_index do |i|
-      indexes << i
-    end
-    indexes.shuffle.each {|i| yield @vertices[i]}
-  end
-  
 
-  
   def add_if_missing(v)
     add_vertex(v) unless @vertices.include? v
   end
