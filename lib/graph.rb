@@ -45,7 +45,7 @@ class Graph
 
     
   def self.random(count, min=1, max=1, oriented = true)
-    graph = self.new count, oriented ? true : false 
+    graph = self.new count, oriented ? true : false
     graph.seed_paths(min, max)
     graph
   end
@@ -58,9 +58,14 @@ class Graph
       paths_to_create = choice.sample
       while (paths_to_create > 0)
         to_vertex= @vertices.sample
-        if to_vertex.valid?(max) && (to_vertex != from_vertex) && !(from_vertex.neighbour? to_vertex)
-          add_direct_path(from_vertex, to_vertex) 
-          paths_to_create -= 1
+        if (to_vertex != from_vertex) && !(from_vertex.neighbour? to_vertex)
+          if @oriented
+            add_direct_path(from_vertex, to_vertex) 
+            paths_to_create -= 1
+          elsif (!(@oriented)) && to_vertex.valid?(max)
+            add_direct_path(from_vertex, to_vertex) 
+            paths_to_create -= 1
+          end
         end
       end
     end

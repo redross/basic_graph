@@ -285,7 +285,6 @@ describe "Graphs" do
             expect do
               @g.jungus?
             end.to take_less_than(0.5).seconds
-            #~ pending
         end
       end
       
@@ -435,16 +434,13 @@ describe "Graphs" do
     end
     
     describe "oriented-graph" do
-      #~ it "should find shortest path between 2 vertices" do
-        #~ @graph = Graph.random 2, 1, 1, true
-        #~ puts "aaaaaaaaaaaaaaaaAA"
-        #~ @graph.dijkstra @graph.vertices.first
-        #~ puts "assdasdas"
-        #~ @graph.vertices.first.distance.should == 0
-        #~ puts "assdasdassdf"
-        #~ @graph.vertices[1].distance.should == 1
-        #~ puts "assdasdassdfdsf"
-      #~ end
+      it "should find shortest path between 2 vertices" do
+        print "\n" + 'should find shortest path between 2 vertices'
+        @graph = Graph.random 2, 1, 1, true
+        @graph.dijkstra @graph.vertices.first
+        @graph.vertices.first.distance.should == 0
+        @graph.vertices[1].distance.should == 1
+      end
       
       it "should find shortest path between N vertices" do
         @graph = Graph.new 6, true
