@@ -4,12 +4,16 @@
 #       
 
 class Vertex
-	attr_accessor :neighbours, :routes, :name, :options
+	attr_accessor :neighbours, :routes, :name, :options, :teacher, :discipline, :student_group, :real_name
   
-  def initialize name = nil
+  def initialize options = {} #name = nil, teacher, discipline, student_group
     @neighbours = {}
     @options = {} #a
-    @name= name if name
+    @name =  options[:name]
+    @real_name =  options[:real_name]
+    @teacher =  options[:teacher]
+    @discipline =  options[:discipline]
+    @student_group =  options[:student_group]
   end
   
   def neighbour? v
@@ -49,11 +53,15 @@ class Vertex
   def method_missing(m, *args, &block)
     m = m.to_s
     if m[m.length - 1] == '='
-      #~ puts "For debug... 'Adding to options' TO DO: remove"
-      @options[m[0...m.length - 1].to_sym]= args.first
+      self.class.send :define_method, m.to_sym do |value|
+        @options[m[0...m.length - 1].to_sym]= value
+      end
+      self.send(m, args.first)
     else
-      #~ puts "For debug... 'Reading from options' TO DO: remove"
-      @options[m[0...m.length].to_sym]
+      self.class.send :define_method, m.to_sym do
+        @options[m[0...m.length].to_sym]
+      end
+      self.send(m)
     end
   end
 end

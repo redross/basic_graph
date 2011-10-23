@@ -4,53 +4,25 @@
 #
 $LOAD_PATH << './lib'
 require 'graph.rb'
-     
-#~ @graph = Graph.new 7, false
-#~ @graph.add_direct_path(0, 1)
-#~ @graph.add_direct_path(0, 2)
-#~ @graph.add_direct_path(1, 4)
-#~ @graph.add_direct_path(2, 3)
-#~ @graph.add_direct_path(3, 4)
-#~ @graph.add_direct_path(3, 5)
-#~ @graph.add_direct_path(3, 6)
-#~ @graph.add_direct_path(5, 6)
-#~ 
-#~ if @graph.jungus?
-  #~ puts "Grafas jungus"
-#~ else
-  #~ puts "Grafas nera jungus"
-#~ end
-#~ 
-#~ puts "Apeitas kelias:"
-#~ puts @graph.dfs_path
-
-#~ @graph = Graph.new 6, false
-#~ @graph.add_direct_path(0, 1, 5)
-#~ @graph.add_direct_path(0, 2, 10)
-#~ @graph.add_direct_path(1, 3, 2)
-#~ @graph.add_direct_path(2, 3, 25)
-#~ @graph.add_direct_path(2, 5, 4)
-#~ @graph.add_direct_path(3, 4, 10)
-#~ @graph.add_direct_path(4, 5, 1)
-#~ @graph.dijkstra @graph.vertices[0]
-#~ 
-@graph= Graph.new 6, true
-@graph.add_direct_path(0, 1, 70)
-@graph.add_direct_path(0, 2, 50)
-@graph.add_direct_path(0, 4, 100)
-@graph.add_direct_path(1, 3, 35)
-@graph.add_direct_path(1, 5, 20)
-@graph.add_direct_path(2, 1, 60)
-@graph.add_direct_path(2, 3, 15)
-@graph.add_direct_path(3, 4, 30)
-@graph.add_direct_path(3, 5, 45)
-@graph.add_direct_path(4, 2, 20)
-@graph.add_direct_path(5, 4, 4)
 
 
+graph = Graph.new 0, false
+subject_1 = Subject.new('Greg Pollack', 'Ruby on Rails with zombies')     
+subject_2 = Subject.new('Ryan Bigg', 'Ruby on Rails screncasting')     
+subject_3 = Subject.new('Andrius Chamentauskas', 'Metametaprogramming')     
+subject_4 = Subject.new('Saulius Grigaitis', 'Deploying Ruby on Rails')
 
+graph.add_vertices(Subject.generate_vertices(subject_1, ['IT 1st. sem.', 'PS 1st. sem.', 'MIM 2nd. sem.']))     
+graph.add_vertices(Subject.generate_vertices(subject_2, ['IT 2st. sem.', 'PS 1st. sem.', 'MIM 2nd. sem.']))     
+graph.add_vertices(Subject.generate_vertices(subject_3, ['IT 4th. sem.', 'PS 2nd. sem.']))     
+graph.add_vertices(Subject.generate_vertices(subject_4, ['IT 3rd. sem.', 'PS 2nd. sem.']))
 
-@graph.dijkstra @graph.vertices[0]
-#~ puts "Apeitas kelias:"
-#~ puts @graph.dfs_path
-@graph.vertices.each {|v| puts "I #{v.name} atejom is #{v.previous} (atstumas nuo starto #{v.distance})" }
+days = [:monday, :tuesday, :thursday]
+lessons = [:"1st", :"2nd", :"3rd", :"4th"]
+
+colors = days.product(lessons).map {|x| x.join("_")}
+
+graph.conflict_graph
+graph.color_graph(colors) 
+
+graph.vertices.each {|v| puts "Dalykas: #{v.real_name}: #{v.color}"}    

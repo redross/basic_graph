@@ -3,17 +3,18 @@
 #       Copyright 2011 Gintaras Sakalauskas <gintaras@Barnis>
 #       
 $LOAD_PATH << '.'
-require 'vertex.rb'
+require 'subject.rb'
 Infinity = 999999999999999999999999999999999999999999999999999
 class Graph
   attr_accessor :vertices
   attr_reader :oriented
   
-	def initialize(vertices = 0, oriented = true)
+	def initialize(vertices = 0, oriented = true, limit = 10)
     @vertices = []
     oriented ? @oriented = true : @oriented = false
     @max_index =  vertices
-    @vertices.fill(0...vertices) {|i| Vertex.new(i)}
+    @vertices.fill(0...vertices) {|i| Vertex.new(:name => i)}
+    @@trigger_limit = limit
 	end
   
   def add_vertices(u)
@@ -52,12 +53,20 @@ class Graph
   
   def seed_paths(min, max)
     @vertices.each do |from_vertex|
+    t= @vertices.size * 2
       fr_neighbours = from_vertex.neighbour_count
       minimum = (min-fr_neighbours > 0 ? min-fr_neighbours : 0)
       choice = (minimum..max-fr_neighbours).to_a
       paths_to_create = choice.sample
+      trigger= @@trigger_limit
       while (paths_to_create > 0)
-        to_vertex= @vertices.sample
+        t -=1
+        trigger -= 1        
+        to_vertex= if trigger < 0
+          redistribute_neighbour(to_vertex, min)
+        else
+          @vertices.sample
+        end
         if (to_vertex != from_vertex) && !(from_vertex.neighbour? to_vertex)
           if @oriented
             add_direct_path(from_vertex, to_vertex) 
@@ -67,9 +76,36 @@ class Graph
             paths_to_create -= 1
           end
         end
+        (full?(from_vertex, max) ? trigger = -1 : trigger = @@trigger_limit) if trigger == 0
+        #~ if t < 0
+          #~ p self
+          #~ p @vertices.collect{|vertex| (vertex.valid?(max) and not(vertex(from_vertex).neighbour? vertex)) ? :a : nil}
+          #~ p trigger
+        #~ end 
       end
     end
   end
+  
+  def full?(from, max = 1)
+    @vertices.collect{|vertex| (vertex.valid?(max) and not(vertex(from).neighbour? vertex)) ? :a : nil}.compact.size == 1
+  end
+  
+  def redistribute_neighbour(to_vertex, min)
+    v1 = find_good_vertex(@vertices - [to_vertex], min)
+    v2 = find_good_vertex(v1.neighbours, min)
+    delete_direct_path(v1, v2)
+    return v1
+  end
+  
+  def find_good_vertex(from, min)
+    from= from.keys if from.class.to_s == "Hash"
+    vertex= vertex(from.sample)
+    while(vertex.neighbour_count <= min)
+      vertex= vertex(from.sample)
+    end
+    return vertex
+  end
+  
   #~ NEIGHBOURS=========================================================
   def neighbours?(from, to)
     convert_to_vertices(from, to) do |from, to|
@@ -194,6 +230,24 @@ class Graph
       vertex.deleted= false
     end
   end
+  
+  def print_shortest_paths vertex
+    dijkstra(vertex)
+    puts "Shortest paths from #{vertex.name}"
+    (@vertices - [vertex]).each do |v|
+      puts dikstra_path_between(vertex, v).to_s + " (#{v.distance})"
+    end
+  end
+  
+  def dikstra_path_between(from, to)
+    ats = [to.name.to_s]
+    #~ p to.name, to.options
+    while to.previous != :undefined
+      ats << to.previous.to_s
+      to = vertex(to.previous)
+    end
+    ats.reverse.join(" => ")
+  end
   #~ 
   #~ DFS================================================================
   def dfs
@@ -234,6 +288,67 @@ class Graph
     path.compact.join(' -> ') 
   end
   
+  #~ 
+  #~ GRAPH COLORING================================================================
+
+  def teacher_hash(recalculate = false)
+    if recalculate or @teachers_hash.nil?
+      @teachers_hash = {}
+      @vertices.each do |vertex|
+        if @teachers_hash[vertex.teacher]
+          @teachers_hash[vertex.teacher] << vertex.name
+        else
+          @teachers_hash[vertex.teacher] = [vertex.name]
+        end
+      end
+    end
+    @teachers_hash
+  end
+
+  def student_hash(recalculate = false)
+    if recalculate or @students_hash.nil?
+      @students_hash = {}
+      @vertices.each do |vertex|
+        if @students_hash[vertex.student_group]
+          @students_hash[vertex.student_group] << vertex.name
+        else
+          @students_hash[vertex.student_group] = [vertex.name]
+        end
+      end
+    end
+    @students_hash
+  end
+
+  def conflict_graph
+    teacher_hash.each_value do |same_teacher_subjects|
+      while same_teacher_subjects.size > 1
+        subject = same_teacher_subjects.pop
+        same_teacher_subjects.each { |other_subject| add_direct_path(subject, other_subject) }
+      end
+    end
+    student_hash.each_value do |same_student_groups|
+      while same_student_groups.size > 1
+        student_group = same_student_groups.pop
+        same_student_groups.each { |other_students| add_direct_path(student_group, other_students) }
+      end
+    end
+  end
+
+  def neighbour_colors(vertex)
+    vertex(vertex).neighbours.keys.collect do |neighbour|
+      @vertices[neighbour].color
+    end.compact
+  end
+  
+
+  def color_graph(colors)
+    vertices.sort{|a, b| b.neighbour_count <=> a.neighbour_count}.each do |vertex|
+      valid_colors = colors
+      valid_colors = valid_colors - neighbour_colors(vertex) if neighbour_colors(vertex)
+      vertex.color = valid_colors.sample
+    end
+  end
+
   private
   
   def convert_to_vertices(from, to)

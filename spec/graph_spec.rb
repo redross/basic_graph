@@ -181,6 +181,18 @@ describe "Graphs" do
     end
     
     describe "neighbours" do
+      it "should return neighbour colors" do
+        u= Vertex.new
+        v= Vertex.new
+        z= Vertex.new
+        @graph.add_vertex([u, v, z])
+        @graph.add_direct_path(u, v) 
+        @graph.add_direct_path(u, z)
+        @graph.vertices[1].color = :red 
+        @graph.vertices[2].color = :green
+        @graph.neighbour_colors(0).should == [:red, :green]
+      end
+
       it "should find if two vertices aren't neighbours" do
         u= Vertex.new
         v= Vertex.new
@@ -273,20 +285,20 @@ describe "Graphs" do
         end
       end
         
-      describe "huge random graph" do
-        it "should not take ages to create a huge random graph" do
-          expect do
-            Graph.random 3000, 2, 4
-          end.to take_less_than(2).seconds
-        end
+      # describe "huge random graph" do
+      #   it "should not take ages to create a huge random graph" do
+      #     expect do
+      #       Graph.random 3000, 2, 4
+      #     end.to take_less_than(2).seconds
+      #   end
         
-        it "should not take ages to walk trough a huge random graph" do
-            @g = Graph.random 3000, 2, 4
-            expect do
-              @g.jungus?
-            end.to take_less_than(0.5).seconds
-        end
-      end
+      #   it "should not take ages to walk trough a huge random graph" do
+      #       @g = Graph.random 3000, 2, 4
+      #       expect do
+      #         @g.jungus?
+      #       end.to take_less_than(0.5).seconds
+      #   end
+      # end
       
     end
   end
@@ -352,6 +364,43 @@ describe "Graphs" do
         @u.valid?(2).should be_false
         @vertex.valid?(2).should be_true
         @v.valid?(2).should be_true
+      end
+    end
+    
+    describe "graph validation" do
+      before :each do
+        @graph= Graph.new 0, false
+        @graph.add_vertex(@vertex)
+        @graph.add_vertex(@u)
+        @graph.add_vertex(@v)
+        @z = Vertex.new
+        @graph.add_vertex(@z)
+        @graph.add_direct_path(@u, @vertex)
+        @graph.add_direct_path(@u, @v)
+        @graph.add_direct_path(@v, @vertex)
+      end
+      
+      it "should be true for a 'full graph'(no more paths can be created)" do
+        @graph.full?(@z, 2).should be_true
+      end
+      
+      it "should be false for a not 'full graph'(more paths can be created)" do
+        @graph.delete_direct_path(@v, @vertex)
+        @graph.full?(@z, 2).should be_false
+      end
+      
+      describe "find_good_vertex" do
+        it "should find a vertex which can afford to loose one neighbour" do
+          vertex= @graph.find_good_vertex(@graph.vertices, 1)
+          vertex.class.to_s.should == "Vertex"
+          vertex.should_not == @z
+        end
+        
+        it "should work with a hash" do
+          vertex= @graph.find_good_vertex(@u.neighbours, 1)
+          vertex.class.to_s.should == "Vertex"
+          vertex.should_not == @u
+        end
       end
     end
   end
@@ -435,7 +484,6 @@ describe "Graphs" do
     
     describe "oriented-graph" do
       it "should find shortest path between 2 vertices" do
-        print "\n" + 'should find shortest path between 2 vertices'
         @graph = Graph.random 2, 1, 1, true
         @graph.dijkstra @graph.vertices.first
         @graph.vertices.first.distance.should == 0
@@ -465,29 +513,97 @@ describe "Graphs" do
     end
   end
   
-  describe "refactored" do
-    it "should create vertices properly" do
-      @graph= Graph.new 1000, false
-      @graph.vertices.count.should == 1000
-      @graph_oriented= Graph.new 1000
-      @graph_oriented.vertices.count.should == 1000
-    end
+  # describe "refactored" do
+  #   it "should create vertices properly" do
+  #     @graph= Graph.new 1000, false
+  #     @graph.vertices.count.should == 1000
+  #     @graph_oriented= Graph.new 1000
+  #     @graph_oriented.vertices.count.should == 1000
+  #   end
     
-    it "should create vertices very fast" do
-      expect do
-        Graph.new 1000, false
-      end.to take_less_than(1).seconds
+  #   it "should create vertices very fast" do
+  #     expect do
+  #       Graph.new 1000, false
+  #     end.to take_less_than(1).seconds
+  #   end
+  # end
+  
+  # it "test" do
+  #   @vv = []
+  #   @vv.fill(0...50000) {|i| i}
+  #   @c= []
+  #   expect do
+  #     1000000.times { @c << @vv.sample(1)}
+  #   end.to take_less_than(2).seconds
+  # end
+
+
+
+  describe "conflict graph" do
+    before do
+      @subject_1 = Subject.new('GP', 'Ruby on Rails with zombies')
+      @subject_2 = Subject.new('RB', 'Ruby on Rails with zombies 2')
+      @subject_3 = Subject.new('GP', 'I bet that You look good on the dancefloor')
+      @graph = Graph.new 0, false
+    end
+
+    describe "teacher hash" do
+      it "should return a teacher hash" do
+        @graph.add_vertices(Subject.generate_vertices(@subject_1, ['R1', 'R2']))
+        @graph.add_vertices(Subject.generate_vertices(@subject_2, ['R3', 'R4', 'R2']))
+        @graph.add_vertices(Subject.generate_vertices(@subject_3, ['R1', 'R2']))
+        @graph.teacher_hash.should == {'GP' => [0, 1, 5, 6], 'RB' => [2, 3, 4]}
+      end
+    end
+
+    describe "student hash" do
+      it "should return student hash" do
+        @graph.add_vertices(Subject.generate_vertices(@subject_1, ['R1', 'R2']))
+        @graph.add_vertices(Subject.generate_vertices(@subject_2, ['R2']))
+        @graph.add_vertices(Subject.generate_vertices(@subject_3, ['R1', 'R2']))
+        @graph.student_hash.should == {'R1' => [0, 3], 'R2' => [1, 2, 4]}
+      end
+    end
+
+    it "should add edges between subjects with same teachers" do
+      @graph.add_vertices(Subject.generate_vertices(@subject_1, ['R1', 'R2']))
+      @graph.add_vertices(Subject.generate_vertices(@subject_2, ['R3', 'R4']))
+      @graph.add_vertices(Subject.generate_vertices(@subject_3, ['R5']))
+      @graph.conflict_graph
+      (@graph.neighbours?(0, 1) and @graph.neighbours?(2, 3) and
+      @graph.neighbours?(0, 4) and @graph.neighbours?(1, 4)).should be_true
+    end
+
+    it "should add edges between subjects with same groups" do
+      @graph.add_vertices(Subject.generate_vertices(@subject_1, ['R1', 'R2']))
+      @graph.add_vertices(Subject.generate_vertices(@subject_2, ['R3', 'R4', 'R2']))
+      @graph.add_vertices(Subject.generate_vertices(@subject_3, ['R1', 'R2']))
+      @graph.conflict_graph
+      (@graph.neighbours?(0, 5) and @graph.neighbours?(1, 4) and
+      @graph.neighbours?(1, 6) and @graph.neighbours?(4, 6)).should be_true
     end
   end
-  
-  it "test" do
-    @vv = []
-    @vv.fill(0...50000) {|i| i}
-    @c= []
-         expect do
-            1000000.times { @c << @vv.sample(1)}
-          end.to take_less_than(2).seconds
-    #~ p @c.uniq.count
+
+
+  describe "coloring graph" do
+    before do
+      @graph = Graph.new 4, false
+    end
+
+    it "should color adjacent vertices in different colors" do
+      @graph.add_direct_path(0, 1)
+      @graph.add_direct_path(1, 2)
+      @graph.add_direct_path(0, 3)
+      @graph.color_graph([:red, :blue, :green])
+      not_equal_color(@graph, 0, 1)
+      not_equal_color(@graph, 1, 2)
+      not_equal_color(@graph, 0, 3)
+    end
   end
-  
+end
+
+private
+
+def not_equal_color(graph, a, b)
+  (graph.vertices[a].color == graph.vertices[b].color).should be_false
 end
